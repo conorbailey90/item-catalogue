@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Edit {{ item.name }}</title>
+</head>
+<body>
+        <h1><a href="{{ url_for('home') }}">Item Catalogue</a></h1>
+    <h1>Edit {{ item.name }}</h1>
+
+    <form action="{{ url_for('edit_item', category_id = category_id, item_id=item_id) }}" method="POST">
+        <label for="">Name</label></br>
+            <input type="text" size="50" name="name" value="{{ item.name }}"></br></br>
+            <label for="">Category</label></br>
+            <select name="category">
+                    {% for category in categories %}
+                        <option value="{{category.name}}">{{category.name}}</option>
+                    {% endfor %}
+                </select></br></br>
+               <label for="">Description</label></br>
+            <input type="text" size="100" name="description" value="{{ item.description }}"></br></br>
+            <input type="submit" value="Edit Item">
+    </form>
+    
+    <a href="{{ url_for('item', category_id = category_id, item_id = item_id) }}">Cancel</a>
+    
+</body>
+</html>

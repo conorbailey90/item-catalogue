@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Item Catalogue</title>
+</head>
+<body>
+        <h1><a href="{{ url_for('home') }}">Item Catalogue</a></h1>
+        <h4><a href="{{ url_for('add_category') }}">Add Category</a></h4>
+        <h4><a href="{{ url_for('add_item') }}">Add Item</a></h4>
+
+        {% with messages = get_flashed_messages() %}
+
+        {% if messages %}
+
+        <ul>
+            {% for message in messages %}
+            <li><strong>{{ message }}</strong></li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        {% endwith%}
+
+        <div class="categories">
+            <h2>Categories</h2>
+            {% for category in categories %}
+
+                <ul>
+                    <li><a href="{{ url_for('item_list', category_id = category.id) }}">{{ category.id }}: {{ category.name }}</a></li>
+                </ul>
+
+            {% endfor %}
+        </div>
+
+        <div class="items">
+            <h2>Items</h2>
+            {% for item in items %}
+
+                <ul>
+                    <li><a href="{{ url_for('item', category_id = item.category.id, item_id = item.id) }}">{{ item.name }}</a></li>
+                </ul>
+
+            {% endfor %}
+            
+        </div>
+    
+</body>
+</html>

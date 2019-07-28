@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title></title>
+</head>
+<body>
+    <h1><a href="{{ url_for('home') }}">Item Catalogue</a></h1>
+
+    <h1>{{ category.name }} </h1>
+    {% with messages = get_flashed_messages() %}
+
+    {% if messages %}
+
+    <ul>
+        {% for message in messages %}
+        <li><strong>{{ message }}</strong></li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    {% endwith%}
+    <a href="{{ url_for('edit_category', category_id = category.id) }}">Edit</a>
+
+    <a href="{{ url_for('delete_category', category_id = category.id) }}">Delete</a>
+
+    {% for item in items %}
+
+    <ul>
+        <li><a href="{{ url_for('item', category_id = category.id, item_id = item.id) }}">{{ item.name }}</a></li>
+    </ul>
+
+    {% endfor %}
+
+    <a href="{{ url_for('home') }}">Return</a>
+</body>
+</html>
