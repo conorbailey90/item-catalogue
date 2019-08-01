@@ -1,59 +1,60 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <!--LOAD PRE-REQUISITES FOR GOOGLE SIGN IN -->
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
-<script src="https://apis.google.com/js/client:platform.js?onload=start" async defer></script>
-<script>
-  function start() {
-    gapi.load('auth2', function() {
-      auth2 = gapi.auth2.init({
-        client_id: '333642631602-sv2aq35jd19420boccv46o9mmus766fu.apps.googleusercontent.com'
-      });
-    });
-  }
-</script>
-<!-- END PRE-REQUISITES FOR GOOGLE SIGN IN -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="google-signin-client_id" content="333642631602-sv2aq35jd19420boccv46o9mmus766fu.apps.googleusercontent.com">
+    <script src="https://apis.google.com/js/platform.js" async defer></script>
+    
+    <title>Document</title>
 </head>
-<body>  
-<button id="signinButton">Google Signin</button>
-<div id="result"></div>
+<body>
+        {% with messages = get_flashed_messages() %}
 
+        {% if messages %}
 
-<p>{{ STATE }}</p>
-          
-<script>
-      $('#signinButton').click(function () {
-        function signInCallback(authResult) {
-          if (authResult['code']) {
-            // Hide the sign-in button now that the user is authorized
-            $('#signinButton').attr('style', 'display:none');
-            // Send the one-time-use code to the server, if the server responds, write a 'login successful' message to the web page and then redirect back to the main restaurants page
-            $.ajax({
-              type: 'POST',
-              url: '/gconnect?state={{STATE}}',
-              processData: false,
-              data: authResult['code'],
-              contentType: 'application/octet-stream; charset=utf-8',
-              success: function (result) {
-                // Handle or verify the server response if necessary.
-                if (result) {
-                  $('#result').html('Login Successful!</br>' + result + '</br>Redirecting...');
-                  setTimeout(function () {
-                    window.location.href = "/";
-                  }, 4000);
-                } else if (authResult['error']) {
-                  console.log('There was an error: ' + authResult['error']);
-                } else {
-                  $('#result').html('Failed to make a server-side call. Check your configuration and console.');
-                }
-              }
-            });
-          }
-        }
-        auth2.grantOfflineAccess().then(signInCallback);
-      })
-</script>
-<!--END GOOGLE PLUS SIGN IN -->
-  </body>
-  </html>
+        <ul>
+            {% for message in messages %}
+            <li><strong>{{ message }}</strong></li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        {% endwith%}
+    <div class="g-signin2" data-onsuccess="onSignIn"></div>
+
+        <script>
+            function onSignIn(googleUser) {
+            var profile = googleUser.getBasicProfile();
+            var id_token = googleUser.getAuthResponse().id_token;
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/gconnect?state={{ STATE }}');
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.onload = function() {
+            console.log('Signed in as: ' + xhr.responseText);
+            };
+            xhr.send('idtoken=' + id_token);
+            window.location.href = "/loginsuccess"
+            // window.location.href = "/"
+            console.log('ID: ' + profile.getId()); // Do not send to your backend! Use an ID token instead.
+            console.log('Name: ' + profile.getName());
+            console.log('Image URL: ' + profile.getImageUrl());
+            console.log('Email: ' + profile.getEmail()); // This is null if the 'email' scope is not present.
+            }
+        </script>
+    
+    <a href="#" onclick="signOut();">Sign out</a>
+        <script>
+            function signOut() {
+                var auth2 = gapi.auth2.getAuthInstance();
+                auth2.signOut().then(function () {
+                    var xhr = new XMLHttpRequest();
+                    xhr.open('POST', '/gdisconnect?state={{ STATE }}');
+                    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                    xhr.send();
+                    console.log('User signed out.');
+                });
+            }
+        </script>
+</body>
+</html>
