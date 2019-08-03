@@ -9,7 +9,20 @@
 <body>
     <h1><a href="{{ url_for('home') }}">Item Catalogue</a></h1>
 
+    {% with messages = get_flashed_messages() %}
+
+        {% if messages %}
+
+        <ul>
+            {% for message in messages %}
+            <li><strong>{{ message }}</strong></li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        {% endwith%}
+
     <h2>{{ category.name }}: {{ item.name }} </h2>
+    <h5>Owner: {{ owner.name }}</h5>
 
     <p>{{ item.description }}</p>
 

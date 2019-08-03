@@ -10,6 +10,7 @@
     <h1><a href="{{ url_for('home') }}">Item Catalogue</a></h1>
 
     <h1>{{ category.name }} </h1>
+    <h5>This category is owned by {{ owner.name}} </h5>
     {% with messages = get_flashed_messages() %}
 
     {% if messages %}

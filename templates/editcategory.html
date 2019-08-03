@@ -13,6 +13,7 @@
         <input type="text" name="name" value="{{ category.name }}">
         <input type="submit" value="Amend" >
     </form>
+    <a href="{{ url_for('item_list', category_id = category.id) }}">Cancel</a>
     
 </body>
 </html>

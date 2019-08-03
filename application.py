@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, url_for, request, redirect, flash
+from flask import Flask, render_template, url_for, request, redirect, flash, Markup
 from flask import session as login_session
 from flask import make_response
 
@@ -64,6 +64,8 @@ def processGoogleButton():
     login_session['email'] = idinfo['email']
 
 
+
+
 @app.route('/gconnect', methods=['POST'])
 def gconnect():
     if request.args.get('state') != login_session['state']:
@@ -71,7 +73,6 @@ def gconnect():
         response = make_response(json.dumps('Invalid state parameter.'), 401)
         response.headers['Content-Type'] = 'application/json'
         return response
-    print('CCCCCCCCCUUUUUUUUUNNNNNNNNNNNNNNTNTTTTTTTTTTTTTT')
     processGoogleButton()
 
     return ""
@@ -100,7 +101,6 @@ def showLoginSuccess():
 
 @app.route('/')
 @app.route('/catalogue/')
-
 def home():
     session = DBSession()
     categories = session.query(Category).all()
@@ -117,6 +117,14 @@ def home():
     return render_template('cataloguehome.html', categories=categories, items=items, STATE=state)
 
 
+@app.route('/catalogue/users')
+def users():
+    DBSession = sessionmaker(bind=engine)
+    session = DBSession()
+    members = session.query(User).all()
+    return render_template('users.html', members = members)
+
+
 # View Item list per category
 @app.route('/catalogue/<int:category_id>/')
 @app.route('/catalogue/<int:category_id>/items/')
@@ -124,10 +132,17 @@ def item_list(category_id):
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
     category = session.query(Category).filter_by(id = category_id).one_or_none()
+
+    owner_id = category.user_id
+    owner = session.query(User).filter_by(id=owner_id).one()
+
+    # The following IF statement is used to prevent an error when the browser Back button is clicked.
     if category == None:
         return redirect(url_for('home'))
     items = session.query(Item).filter_by(category_id=category_id).all()
-    return render_template('categorylist.html', category = category, items=items)
+    if items == []:
+        flash(Markup('There are no items listed under this category. Add an item <a href="/catalogue/items/add/">here</a>'))
+    return render_template('categorylist.html', category = category, items=items, owner = owner)
 
 
 # View individual item details
@@ -135,9 +150,13 @@ def item_list(category_id):
 def item(category_id, item_id):
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
+
     category = session.query(Category).filter_by(id = category_id).one()
     item = session.query(Item).filter_by(category_id= category_id, id=item_id).one()
-    return render_template('listitem.html', category_id = category_id, item_id=item_id, category = category, item = item)
+
+    owner_id = item.user_id
+    owner = session.query(User).filter_by(id=owner_id).one()
+    return render_template('listitem.html', category_id = category_id, item_id=item_id, category = category, item = item, owner=owner)
 
 # Add new category
 @app.route('/catalogue/categories/add/', methods = ['GET', 'POST'])
@@ -149,12 +168,22 @@ def add_category():
         return redirect(url_for('showLogin'))
 
     if request.method == 'POST':
+        # Check the text input is not blank.
         if request.form['name'] == '':
             flash('Please add a category name.')
             return render_template('addcategory.html')
         
-        newUser = User(name=request.form['name'])
-        new_category = Category(name = request.form['name'])
+        # Check to see if the logged in users details are stored in the database
+        currentUser = session.query(User).filter_by(email=login_session['email']).first()
+        if currentUser == None:
+            # Add new user to datbase
+            newUser = User(name = login_session['username'], email = login_session['email'])
+            session.add(newUser)
+            session.commit()
+
+        # Add new category with a link to the User ID
+        currentUser = session.query(User).filter_by(email=login_session['email']).first()
+        new_category = Category(name = request.form['name'], user_id=currentUser.id)
         session.add(new_category)
         session.commit()
         flash('New category created: %s' % new_category.name) 
@@ -167,7 +196,16 @@ def add_category():
 def edit_category(category_id):
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
+
     category = session.query(Category).filter_by(id = category_id).one()
+
+    owner_id = category.user_id
+    owner = session.query(User).filter_by(id=owner_id).one()
+
+    if owner.email != login_session['email']:
+        flash('You are not authorised to edit this category.')
+        return redirect(url_for('item_list', category_id = category.id))
+
     if request.method == 'POST':
         category.name = request.form['name']
         session.add(category)
@@ -182,13 +220,22 @@ def edit_category(category_id):
 def delete_category(category_id):
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
+
     category = session.query(Category).filter_by(id = category_id).one_or_none()
+
+    owner_id = category.user_id
+    owner = session.query(User).filter_by(id=owner_id).one()
+
+    if owner.email != login_session['email']:
+        flash('You are not authorised to delete this category.')
+        return redirect(url_for('item_list', category_id = category.id))
+
     if category == None:
         return redirect(url_for('home'))
     elif request.method == 'POST':
         session.delete(category)
         session.commit()
-        flash('Deleted: %s' % category.name) 
+        flash('Deleted category: %s' % category.name) 
         return redirect(url_for('home'))
     else:
         return render_template('deletecategory.html', category_id = category_id, category = category)
@@ -198,21 +245,41 @@ def delete_category(category_id):
 def add_item():
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
+
     categories = session.query(Category).all()
+
     if categories == []: # No categories stored in Database. Redirect to add a category.
-        flash('Please create a category for your new item first') 
+        flash('Please create a category for your new item first.')
         return redirect(url_for('add_category'))
+
+    if 'username' not in login_session:
+        flash('Please sign in to add a new item.')
+        return redirect(url_for('showLogin'))
+    
     if request.method == 'POST':
+        # Check the text input is not blank.
         if request.form['name'] == '':
-            flash('Please enter an item name') 
-            return render_template('additem.html', categories=categories)
+            flash('Please add an item name.')
+            return render_template('additem.html', categories = categories)
+        
+        # Check to see if the logged in users details are stored in the database
+        currentUser = session.query(User).filter_by(email=login_session['email']).first()
+        if currentUser == None:
+            # Add new user to datbase
+            newUser = User(name = login_session['username'], email = login_session['email'])
+            session.add(newUser)
+            session.commit()
+        
+        # Add new category with a link to the User ID
+        currentUser = session.query(User).filter_by(email=login_session['email']).first()
         new_item = Item(
             name = request.form['name'], 
             category = session.query(Category).filter_by(name = request.form['category']).one(),
-            description = request.form['description'])
+            description = request.form['description'],
+            user_id = currentUser.id)
         session.add(new_item)
         session.commit()
-        flash('%s added!' %new_item.name) 
+        flash('%s added to to the %s category.' %(new_item.name, new_item.category.name) )
         return redirect(url_for('home'))
     else:
         return render_template('additem.html', categories=categories)
@@ -222,26 +289,65 @@ def add_item():
 def edit_item(category_id, item_id):
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
+
     categories = session.query(Category).all()
-    item = session.query(Item).filter_by(id=item_id).one()
+
     editItem = session.query(Item).filter_by(id =item_id).one()
+
+    owner_id = editItem.user_id
+    owner = session.query(User).filter_by(id=owner_id).one()
+
+    if 'username' not in login_session:
+        flash('Please sign in to edit an item.')
+        return redirect(url_for('showLogin'))
+
+    if owner.email != login_session['email']:
+        flash('You are not authorised to edit this item.')
+        return redirect(url_for('item', category_id=category_id, item_id=item_id))
+    
     if request.method == 'POST':
+        # Check the text input is not blank.
+        if request.form['name'] == '':
+            flash('Please add an item name.')
+            return render_template('additem.html', categories = categories)
+        
+        # Check to see if the logged in users details are stored in the database
+        currentUser = session.query(User).filter_by(email=login_session['email']).first()
+        if currentUser == None:
+            # Add new user to datbase
+            newUser = User(name = login_session['username'], email = login_session['email'])
+            session.add(newUser)
+            session.commit()
+
         editItem.name = request.form['name']
         editItem.category = session.query(Category).filter_by(name = request.form['category']).one()
         editItem.description = request.form['description']
         session.add(editItem)
         session.commit()
         flash('%s updated' %editItem.name) 
-        return redirect(url_for('home'))
+        return redirect(url_for('item', category_id=category_id, item_id=item_id, owner=owner))
     else:
-        return render_template('edititem.html', category_id = category_id, item_id = item_id, categories=categories, item=item)
+        return render_template('edititem.html', category_id = category_id, item_id = item_id, categories=categories, item=editItem)
 
 # Delete item
 @app.route('/catalogue/<int:category_id>/<int:item_id>/delete/', methods = ['GET', 'POST'])
 def delete_item(category_id, item_id):
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
+
     deleteItem = session.query(Item).filter_by(id =item_id).one_or_none()
+
+    owner_id = deleteItem.user_id
+    owner = session.query(User).filter_by(id=owner_id).one()
+
+    if 'username' not in login_session:
+        flash('Please sign in to delete an item.')
+        return redirect(url_for('showLogin'))
+
+    if owner.email != login_session['email']:
+        flash('You are not authorised to delete this item.')
+        return redirect(url_for('item', category_id=category_id, item_id=item_id))
+
     if deleteItem == None:
         return redirect(url_for('home'))
     elif request.method == 'POST':
