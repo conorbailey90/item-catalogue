@@ -22,7 +22,7 @@ DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
 # Create dummy user
-user1 = User(name="Conor Bailey", email="conbailey90@gmail.com")
+user1 = User(name="Conor Bailey", email="conbailey@gmail.com")
 session.add(user1)
 session.commit()
 
@@ -94,4 +94,4 @@ print('items added!!!')
 
 categories = session.query(Category).all()
 for category in categories:
-    print "Category: " + category.name
+    print ("Category: " + category.name)

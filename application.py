@@ -31,7 +31,8 @@ session = DBSession()
 
 def processGoogleButton():
     token_id = request.form['idtoken']
-    print(token_id)
+    # print(token_id)
+    
     try:
         # Specify the CLIENT_ID of the app that accesses the backend:
         idinfo = id_token.verify_oauth2_token(token_id,
@@ -62,6 +63,7 @@ def processGoogleButton():
     login_session['username'] = idinfo['name']
     login_session['picture'] = idinfo['picture']
     login_session['email'] = idinfo['email']
+
 
 
 
@@ -123,6 +125,23 @@ def users():
     session = DBSession()
     members = session.query(User).all()
     return render_template('users.html', members = members)
+
+@app.route('/catalogue/users/<int:user_id>/')
+def user_profile(user_id):
+    DBSession = sessionmaker(bind=engine)
+    session = DBSession()
+
+    if 'username' not in login_session:
+        flash('Please sign in.')
+        return redirect(url_for('showLogin'))
+
+    user = session.query(User).filter_by(email = login_session['email']).one_or_none()
+    user_categories = session.query(Category).filter_by(user_id = user_id).all()
+    return render_template('profile.html', user = user, categories = user_categories)
+
+    
+
+
 
 
 # View Item list per category
@@ -202,9 +221,14 @@ def edit_category(category_id):
     owner_id = category.user_id
     owner = session.query(User).filter_by(id=owner_id).one()
 
+    if 'username' not in login_session:
+        flash('Please sign in to edit an item.')
+        return redirect(url_for('showLogin'))
+
     if owner.email != login_session['email']:
         flash('You are not authorised to edit this category.')
         return redirect(url_for('item_list', category_id = category.id))
+
 
     if request.method == 'POST':
         category.name = request.form['name']
@@ -225,6 +249,10 @@ def delete_category(category_id):
 
     owner_id = category.user_id
     owner = session.query(User).filter_by(id=owner_id).one()
+
+    if 'username' not in login_session:
+        flash('Please sign in to delete an item.')
+        return redirect(url_for('showLogin'))
 
     if owner.email != login_session['email']:
         flash('You are not authorised to delete this category.')

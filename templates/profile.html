@@ -4,21 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Members</title>
+    <title>{{ user.name }}</title>
 </head>
 <body>
 
-    <h1>Members</h1>
+    <h1>{{ user.name }}</h1>
 
-    {% for member in members %}
+    <h4>Categories</h4>
+
+    {% for category in categories %}
 
     <ul>
-        <li>
-           <a href="{{ url_for('user_profile', user_id=member.id) }}"> {{member.name}}: {{ member.email }}</a>
-        </li>
+        <li>{{ category.name }}</li>
     </ul>
-
-    {% endfor %}
     
+    {% endfor %}
 </body>
 </html>
