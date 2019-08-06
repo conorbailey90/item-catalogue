@@ -17,8 +17,7 @@ import random, string
 
 app = Flask(__name__)
 
-CLIENT_ID = json.loads(
-    open('client_secrets.json', 'r').read())['web']['client_id']
+CLIENT_ID = json.loads(open('client_secrets.json', 'r').read())['web']['client_id']
 
 
 # Connect to the Database
@@ -29,77 +28,90 @@ Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
-def processGoogleButton():
-    token_id = request.form['idtoken']
-    # print(token_id)
-    
+# User Helper Functions
+def createUser(login_session):
+    newUser = User(name=login_session['username'],
+                   email=login_session['email'])
+    session.add(newUser)
+    session.commit()
+    user = session.query(User).filter_by(email=login_session['email']).one()
+    return user.id
+
+
+def getUserInfo(user_id):
+    user = session.query(User).filter_by(id=user_id).one()
+    return user
+
+
+def getUserID(email):
+    try:
+        user = session.query(User).filter_by(email=email).one()
+        return user.id
+    except:
+        return None
+
+@app.route('/login')
+def login():
+    state = ''.join(random.choice(string.ascii_uppercase + string.digits)
+        for x in range(32))
+    login_session['state'] = state
+    return render_template('login.html', STATE=state)
+
+
+@app.route('/gconnect', methods=['POST'])
+def gconnect():
+    # Validate anti-forgery state token
+    if request.args.get('state') != login_session['state']:
+        response = make_response(json.dumps('Invalid state parameter.'), 401)
+        response.headers['Content-Type'] = 'application/json'
+        return response
+    # (Receive token by HTTPS POST)
+    # ...
+    token = request.form['idtoken']
+    print(token)
     try:
         # Specify the CLIENT_ID of the app that accesses the backend:
-        idinfo = id_token.verify_oauth2_token(token_id,
-                                              requests.Request(), CLIENT_ID)
+        idinfo = id_token.verify_oauth2_token(token, requests.Request(), CLIENT_ID)
 
         # Or, if multiple clients access the backend server:
         # idinfo = id_token.verify_oauth2_token(token, requests.Request())
         # if idinfo['aud'] not in [CLIENT_ID_1, CLIENT_ID_2, CLIENT_ID_3]:
         #     raise ValueError('Could not verify audience.')
 
-        if idinfo['iss'] not in ['accounts.google.com',
-                                 'https://accounts.google.com']:
+        if idinfo['iss'] not in ['accounts.google.com', 'https://accounts.google.com']:
             raise ValueError('Wrong issuer.')
 
         # If auth request is from a G Suite domain:
         # if idinfo['hd'] != GSUITE_DOMAIN_NAME:
         #     raise ValueError('Wrong hosted domain.')
 
-        # ID token is valid. Get the user's Google
-        # Account ID from the decoded token.
-
+        # ID token is valid. Get the user's Google Account ID from the decoded token.
         userid = idinfo['sub']
     except ValueError:
         # Invalid token
-        print(ValueError)
         pass
-
+    
     login_session['username'] = idinfo['name']
     login_session['picture'] = idinfo['picture']
     login_session['email'] = idinfo['email']
 
+    return ''
+
+   
 
 
-
-
-@app.route('/gconnect', methods=['POST'])
-def gconnect():
-    if request.args.get('state') != login_session['state']:
-        
-        response = make_response(json.dumps('Invalid state parameter.'), 401)
-        response.headers['Content-Type'] = 'application/json'
-        return response
-    processGoogleButton()
-
-    return ""
-
-@app.route('/gdisconnect', methods=['POST'])
+@app.route('/gdisconnect', methods = ['POST'])
 def gdisconnect():
     if request.args.get('state') == login_session['state']:
         username = login_session.get('username')
-        if username is not None:
+        if username != None:
             del login_session['username']
             del login_session['email']
             del login_session['picture']
 
     return ""
 
-@app.route('/login')
-def showLogin():
-    state = ''.join(random.choice(string.ascii_uppercase + string.digits)
-        for x in range(32))
-    login_session['state'] = state
-    return render_template('login.html', STATE=state)
-
-@app.route('/loginsuccess')
-def showLoginSuccess():
-    return render_template('loginsuccess.html')
+    
 
 @app.route('/')
 @app.route('/catalogue/')
@@ -107,6 +119,7 @@ def home():
     session = DBSession()
     categories = session.query(Category).all()
     items = session.query(Item).all()
+
     getState = login_session.get("state")
     if getState is None:
         generatedState = ''.join(random.choice(
@@ -115,16 +128,16 @@ def home():
         login_session['state'] = generatedState
 
     state = login_session['state']
-    
-    return render_template('cataloguehome.html', categories=categories, items=items, STATE=state)
+    user = login_session.get('username')
+    return render_template('cataloguehome.html', categories=categories, items=items, STATE=state, user=user)
 
 
-@app.route('/catalogue/users')
-def users():
+@app.route('/catalogue/members')
+def members():
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
     members = session.query(User).all()
-    return render_template('users.html', members = members)
+    return render_template('members.html', members = members)
 
 @app.route('/catalogue/users/<int:user_id>/')
 def user_profile(user_id):
@@ -133,16 +146,13 @@ def user_profile(user_id):
 
     if 'username' not in login_session:
         flash('Please sign in.')
-        return redirect(url_for('showLogin'))
+        return redirect(url_for('login'))
 
-    user = session.query(User).filter_by(email = login_session['email']).one_or_none()
+    member = session.query(User).filter_by(id=user_id).one()
     user_categories = session.query(Category).filter_by(user_id = user_id).all()
-    return render_template('profile.html', user = user, categories = user_categories)
+    return render_template('profile.html', member = member, categories = user_categories)
 
     
-
-
-
 
 # View Item list per category
 @app.route('/catalogue/<int:category_id>/')
@@ -223,7 +233,7 @@ def edit_category(category_id):
 
     if 'username' not in login_session:
         flash('Please sign in to edit an item.')
-        return redirect(url_for('showLogin'))
+        return redirect(url_for('login'))
 
     if owner.email != login_session['email']:
         flash('You are not authorised to edit this category.')
@@ -252,7 +262,7 @@ def delete_category(category_id):
 
     if 'username' not in login_session:
         flash('Please sign in to delete an item.')
-        return redirect(url_for('showLogin'))
+        return redirect(url_for('login'))
 
     if owner.email != login_session['email']:
         flash('You are not authorised to delete this category.')
@@ -282,7 +292,7 @@ def add_item():
 
     if 'username' not in login_session:
         flash('Please sign in to add a new item.')
-        return redirect(url_for('showLogin'))
+        return redirect(url_for('login'))
     
     if request.method == 'POST':
         # Check the text input is not blank.
@@ -327,7 +337,7 @@ def edit_item(category_id, item_id):
 
     if 'username' not in login_session:
         flash('Please sign in to edit an item.')
-        return redirect(url_for('showLogin'))
+        return redirect(url_for('login'))
 
     if owner.email != login_session['email']:
         flash('You are not authorised to edit this item.')
@@ -370,7 +380,7 @@ def delete_item(category_id, item_id):
 
     if 'username' not in login_session:
         flash('Please sign in to delete an item.')
-        return redirect(url_for('showLogin'))
+        return redirect(url_for('login'))
 
     if owner.email != login_session['email']:
         flash('You are not authorised to delete this item.')
