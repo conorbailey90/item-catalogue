@@ -28,27 +28,6 @@ Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
-# User Helper Functions
-def createUser(login_session):
-    newUser = User(name=login_session['username'],
-                   email=login_session['email'])
-    session.add(newUser)
-    session.commit()
-    user = session.query(User).filter_by(email=login_session['email']).one()
-    return user.id
-
-
-def getUserInfo(user_id):
-    user = session.query(User).filter_by(id=user_id).one()
-    return user
-
-
-def getUserID(email):
-    try:
-        user = session.query(User).filter_by(email=email).one()
-        return user.id
-    except:
-        return None
 
 @app.route('/login')
 def login():
@@ -128,7 +107,16 @@ def home():
         login_session['state'] = generatedState
 
     state = login_session['state']
+
+    # Register a new user to the database
     user = login_session.get('username')
+    if user != None:
+        user_email = session.query(User).filter_by(email=login_session['email']).one_or_none()
+        if user_email == None:
+            new_user = User(name=login_session['username'], email=login_session['email'])
+            session.add(new_user)
+            session.commit()
+
     return render_template('cataloguehome.html', categories=categories, items=items, STATE=state, user=user)
 
 
