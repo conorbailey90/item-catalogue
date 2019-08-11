@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="google-signin-client_id" content="333642631602-sv2aq35jd19420boccv46o9mmus766fu.apps.googleusercontent.com">
+    <script src="https://apis.google.com/js/platform.js" async defer></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Item Catalogue</title>
+</head>
+<body>
+        <div class="g-signin2" data-onsuccess="onSignIn"></div>
+
+        <script>
+            function onSignIn(googleUser) {
+            var profile = googleUser.getBasicProfile();
+            var id_token = googleUser.getAuthResponse().id_token;
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/gconnect?state={{ STATE }}');
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.onload = function() {
+            console.log('Signed in as: ' + xhr.responseText);
+            };
+            xhr.send('idtoken=' + id_token)
+            console.log('ID: ' + profile.getId()); // Do not send to your backend! Use an ID token instead.
+            console.log('Name: ' + profile.getName());
+            console.log('Image URL: ' + profile.getImageUrl());
+            console.log('Email: ' + profile.getEmail()); // This is null if the 'email' scope is not present.
+            }
+
+        </script>
+
+        <nav>
+        {% if user == None %}
+            <li><a href="{{ url_for('login') }}">Sign In</a></li>
+    
+            {% else %}
+            <li><a href="#" onclick="signOut();">Sign Out</a></li>
+            {% endif %}
+         
+    
+        </nav>
+
+        <P>Signed in: {{ user }}</P>
+        <div class="result"></div>
+
+        <script>
+            function signOut() {
+                var auth2 = gapi.auth2.getAuthInstance();
+                auth2.signOut().then(function () {
+                    var xhr = new XMLHttpRequest();
+                    xhr.open('POST', '/gdisconnect?state={{ STATE }}');
+                    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                    xhr.send();
+                console.log('User signed out.');
+                setTimeout(function(){window.location.href = '/catalogue'}, 2000);
+            document.querySelector('.result').innerHTML = '<p>You have successfully logged out...</p>.';
+                });
+            }
+            function onLoad() {
+            gapi.load('auth2', function() {
+                gapi.auth2.init();
+            });
+        
+        }
+        </script>
+    
+        <!-- <h3>Logged in as {{ username }}</h3> -->
+
+
+
+
+        <h1><a href="{{ url_for('home') }}">Item Catalogue</a></h1>
+        <h4><a href="{{ url_for('add_category') }}">Add Category</a></h4>
+        <h4><a href="{{ url_for('add_item') }}">Add Item</a></h4>
+
+        {% with messages = get_flashed_messages() %}
+
+        {% if messages %}
+
+        <ul>
+            {% for message in messages %}
+            <li><strong>{{ message }}</strong></li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        {% endwith%}
+
+        <div class="categories">
+            <h2>Categories</h2>
+            {% for category in categories %}
+
+                <ul>
+                    <li><a href="{{ url_for('item_list', category_id = category.id) }}">{{ category.id }}: {{ category.name }}</a></li>
+                </ul>
+
+            {% endfor %}
+        </div>
+
+        <div class="items">
+            <h2>Items</h2>
+            
+
+                <ul>
+                        {% for item in items %}
+                    <li><a href="{{ url_for('item', category_id = item.category.id, item_id = item.id) }}">{{ item.name }}</a></li>
+                        {% endfor %}
+                </ul>
+
+           
+            
+        </div>
+        <script src="https://apis.google.com/js/platform.js?onload=onLoad" async defer></script>
+</body>
+</html>

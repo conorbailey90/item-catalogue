@@ -1,18 +1,16 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Delete {{ item }}?</title>
-</head>
-<body>
-        <h1><a href="{{ url_for('home') }}">Item Catalogue</a></h1>
+{% extends "layout.html" %}
+{% block title %}Delete {{ item }}?{% endblock %}
+{% block head %}
+{{ super() }}
+{% endblock %}
+{% block content %}
 
- <h1>Are you sure you want to delete {{ item.name }}?</h1>
+ <h3>Are you sure you want to delete {{ item.name }}?</h3></br>
 
  <form action="{{ url_for('delete_item', category_id = category_id, item_id = item.id) }}" method="POST">
      <input type="submit" value="Delete">
- </form>
-</body>
-</html>
+ </form></br>
+
+ <a href="{{ url_for('item', category_id = category_id, item_id = item.id) }}">Cancel</a>
+
+ {% endblock %}

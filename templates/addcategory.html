@@ -1,14 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Add New Category</title>
-</head>
-<body>
-
-    <h1>Add New Category</h1>
+{% extends "layout.html" %}
+{% block title %}Add New Category{% endblock %}
+{% block head %}
+{{ super() }}
+{% endblock %}
+{% block content %}
+    <h2>Add New Category</h2></br>
 
     {% with messages = get_flashed_messages() %}
 
@@ -16,7 +12,7 @@
     
         <ul>
             {% for message in messages %}
-            <li><strong>{{ message }}</strong></li>
+            <li class="flash-message">{{ message }}</li>
             {% endfor %}
         </ul>
         {% endif %}
@@ -26,8 +22,7 @@
         <label for="">Category Name:</label>
         <input type="text" name="name" size="50">
         <input type="submit" value="Add">
-    </form>
+    </form></br>
     <a href="{{ url_for('home') }}">Cancel</a>
     
-</body>
-</html>
+{% endblock %}

@@ -90,15 +90,7 @@ def gdisconnect():
 
     return ""
 
-    
-
-@app.route('/')
-@app.route('/catalogue/')
-def home():
-    session = DBSession()
-    categories = session.query(Category).all()
-    items = session.query(Item).all()
-
+def get_state():
     getState = login_session.get("state")
     if getState is None:
         generatedState = ''.join(random.choice(
@@ -107,6 +99,18 @@ def home():
         login_session['state'] = generatedState
 
     state = login_session['state']
+    return state
+
+
+
+@app.route('/')
+@app.route('/catalogue/')
+def home():
+    session = DBSession()
+    categories = session.query(Category).all()
+    items = session.query(Item).all()
+
+    state = get_state()
 
     # Register a new user to the database
     user = login_session.get('username')
@@ -116,8 +120,9 @@ def home():
             new_user = User(name=login_session['username'], email=login_session['email'])
             session.add(new_user)
             session.commit()
-
-    return render_template('cataloguehome.html', categories=categories, items=items, STATE=state, user=user)
+    current_user = session.query(User).filter_by(email = login_session.get('email')).one_or_none()
+   
+    return render_template('cataloguehome.html', categories=categories, items=items, STATE=state, user=user, current_user=current_user)
 
 
 @app.route('/catalogue/members')
@@ -125,7 +130,8 @@ def members():
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
     members = session.query(User).all()
-    return render_template('members.html', members = members)
+    state = get_state()
+    return render_template('members.html', members = members, STATE=state)
 
 @app.route('/catalogue/users/<int:user_id>/')
 def user_profile(user_id):
@@ -135,10 +141,13 @@ def user_profile(user_id):
     if 'username' not in login_session:
         flash('Please sign in.')
         return redirect(url_for('login'))
+    
+    state = get_state()
 
     member = session.query(User).filter_by(id=user_id).one()
     user_categories = session.query(Category).filter_by(user_id = user_id).all()
-    return render_template('profile.html', member = member, categories = user_categories)
+    user_items = session.query(Item).filter_by(user_id = user_id).all()
+    return render_template('profile.html', member = member, categories = user_categories, items = user_items, STATE=state)
 
     
 
@@ -153,13 +162,16 @@ def item_list(category_id):
     owner_id = category.user_id
     owner = session.query(User).filter_by(id=owner_id).one()
 
-    # The following IF statement is used to prevent an error when the browser Back button is clicked.
+    state = get_state()
+    user = login_session.get('username')
+
+    # IF statement used to prevent an error when the browser Back button is clicked after category deletion.
     if category == None:
         return redirect(url_for('home'))
     items = session.query(Item).filter_by(category_id=category_id).all()
     if items == []:
         flash(Markup('There are no items listed under this category. Add an item <a href="/catalogue/items/add/">here</a>'))
-    return render_template('categorylist.html', category = category, items=items, owner = owner)
+    return render_template('categorylist.html',user = user, category = category, items=items, owner = owner, STATE=state)
 
 
 # View individual item details
@@ -168,21 +180,28 @@ def item(category_id, item_id):
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
 
+    state = get_state()
+    user = login_session.get('username')
+
     category = session.query(Category).filter_by(id = category_id).one()
     item = session.query(Item).filter_by(category_id= category_id, id=item_id).one()
 
     owner_id = item.user_id
     owner = session.query(User).filter_by(id=owner_id).one()
-    return render_template('listitem.html', category_id = category_id, item_id=item_id, category = category, item = item, owner=owner)
+    return render_template('listitem.html', user = user, category_id = category_id, item_id=item_id, category = category, item = item, owner=owner, STATE=state)
 
 # Add new category
 @app.route('/catalogue/categories/add/', methods = ['GET', 'POST'])
 def add_category():
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
+
+    state = get_state()
+    user = login_session.get('username')
+
     if 'username' not in login_session:
         flash('Please sign in to add a new category.')
-        return redirect(url_for('showLogin'))
+        return redirect(url_for('login'))
 
     if request.method == 'POST':
         # Check the text input is not blank.
@@ -206,13 +225,16 @@ def add_category():
         flash('New category created: %s' % new_category.name) 
         return redirect(url_for('home'))
     else:
-        return render_template('addcategory.html')
+        return render_template('addcategory.html',user = user, STATE=state)
 
 # Edit category
 @app.route('/catalogue/categories/<int:category_id>/edit/', methods = ['GET', 'POST'])
 def edit_category(category_id):
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
+
+    state = get_state()
+    user = login_session.get('username')
 
     category = session.query(Category).filter_by(id = category_id).one()
 
@@ -235,13 +257,16 @@ def edit_category(category_id):
         flash('Category name updated') 
         return redirect(url_for('item_list', category_id = category_id))
     else:
-        return render_template('editcategory.html', category_id = category_id, category = category)
+        return render_template('editcategory.html',user = user, category_id = category_id, category = category, STATE=state)
 
 # Delete category
 @app.route('/catalogue/categories/<int:category_id>/delete/', methods = ['GET', 'POST'])
 def delete_category(category_id):
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
+
+    state = get_state()
+    user = login_session.get('username')
 
     category = session.query(Category).filter_by(id = category_id).one_or_none()
 
@@ -264,13 +289,16 @@ def delete_category(category_id):
         flash('Deleted category: %s' % category.name) 
         return redirect(url_for('home'))
     else:
-        return render_template('deletecategory.html', category_id = category_id, category = category)
+        return render_template('deletecategory.html',user = user, category_id = category_id, category = category, STATE=state)
 
 # Add Item
 @app.route('/catalogue/items/add/', methods = ['GET', 'POST'])
 def add_item():
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
+
+    state = get_state()
+    user = login_session.get('username')
 
     categories = session.query(Category).all()
 
@@ -308,13 +336,16 @@ def add_item():
         flash('%s added to to the %s category.' %(new_item.name, new_item.category.name) )
         return redirect(url_for('home'))
     else:
-        return render_template('additem.html', categories=categories)
+        return render_template('additem.html', user = user, categories=categories, STATE=state)
 
 # Edit Item
 @app.route('/catalogue/<int:category_id>/<int:item_id>/edit/', methods=['GET', 'POST'])
 def edit_item(category_id, item_id):
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
+
+    state = get_state()
+    user = login_session.get('username')
 
     categories = session.query(Category).all()
 
@@ -353,13 +384,16 @@ def edit_item(category_id, item_id):
         flash('%s updated' %editItem.name) 
         return redirect(url_for('item', category_id=category_id, item_id=item_id, owner=owner))
     else:
-        return render_template('edititem.html', category_id = category_id, item_id = item_id, categories=categories, item=editItem)
+        return render_template('edititem.html',user = user, category_id = category_id, item_id = item_id, categories=categories, item=editItem, STATE=state)
 
 # Delete item
 @app.route('/catalogue/<int:category_id>/<int:item_id>/delete/', methods = ['GET', 'POST'])
 def delete_item(category_id, item_id):
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
+
+    state = get_state()
+    user = login_session.get('username')
 
     deleteItem = session.query(Item).filter_by(id =item_id).one_or_none()
 
@@ -382,7 +416,7 @@ def delete_item(category_id, item_id):
         flash('%s deleted' %deleteItem.name) 
         return redirect(url_for('item_list', category_id = category_id))
     else:
-        return render_template('deleteitem.html', category_id = category_id, item = deleteItem)
+        return render_template('deleteitem.html',user = user, category_id = category_id, item = deleteItem, STATE=state)
 
 
 if __name__ == '__main__':

@@ -3,15 +3,92 @@
   <head>
     {% block head %}
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous"> -->
+    <meta name="google-signin-client_id" content="333642631602-sv2aq35jd19420boccv46o9mmus766fu.apps.googleusercontent.com">
+    <script src="https://apis.google.com/js/platform.js" async defer></script>
     <title>{% block title %}{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css?family=Montserrat&display=swap" rel="stylesheet">
     {% endblock %}
   </head>
   <body>
-    <div id="content">{% block content %}{% endblock %}</div>
-    <div id="footer">
+        <div class="g-signin2" data-onsuccess="onSignIn"></div>
+
+        <script>
+            function onSignIn(googleUser) {
+            var profile = googleUser.getBasicProfile();
+            var id_token = googleUser.getAuthResponse().id_token;
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/gconnect?state={{ STATE }}');
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.onload = function() {
+            console.log('Signed in as: ' + xhr.responseText);
+            };
+            xhr.send('idtoken=' + id_token)
+            const signedIn = 
+            document.querySelector('.login-status').innerHTML = `<p>Logged In: ${profile.getName()}</p>`;
+            console.log('ID: ' + profile.getId()); // Do not send to your backend! Use an ID token instead.
+            console.log('Name: ' + profile.getName());
+            console.log('Image URL: ' + profile.getImageUrl());
+            console.log('Email: ' + profile.getEmail()); // This is null if the 'email' scope is not present.
+            }
+
+        </script>
+
+        <nav>
+          <div class="nav-links">
+              <P class="login-status"></P>
+              <h1 class="heading"><a href="{{ url_for('home') }}">Item Catalogue</a></h1>
+          <ul>
+            {% if user == None %}
+              <li><a href="{{ url_for('login') }}">Sign In</a></li>
+              {% else %}
+              <li><a href="#" onclick="signOut();">Sign Out</a></li>
+            {% endif %}
+          </ul>
+        </div>
+      </nav>
+        
+        <!-- {% if user == None %}
+        <p></p>
+        {% else %}
+        <P class="login-status">Signed in: {{ user }}</P>
+        {% endif %} -->
+
+        
+
+        <div class="result"></div>
+
+        <script>
+            function signOut() {
+                var auth2 = gapi.auth2.getAuthInstance();
+                auth2.signOut().then(function () {
+                    var xhr = new XMLHttpRequest();
+                    xhr.open('POST', '/gdisconnect?state={{ STATE }}');
+                    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                    xhr.send();
+                console.log('User signed out.');
+                setTimeout(function(){window.location.href = '/catalogue'}, 2000);
+                document.querySelector('.login-status').innerHTML = '<p>You have successfully logged out...</p>';
+                });
+            }
+            function onLoad() {
+            gapi.load('auth2', function() {
+                gapi.auth2.init();
+            });
+        
+        }
+        </script>
+  
+   
+    <div class="content">{% block content %}{% endblock %}</div>
+    
+    
+    <div class="footer">
       {% block footer %}
       &copy; Copyright 2019 by <a href="https://www.conbailey.com">Conor Bailey</a>
       {% endblock %}
     </div>
+
+    <script src="https://apis.google.com/js/platform.js?onload=onLoad" async defer></script>
   </body>
 </html>

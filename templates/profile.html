@@ -1,23 +1,47 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>{{ member.name }}</title>
-</head>
-<body>
+{% extends "layout.html" %}
+{% block title %}Item Catalogue{% endblock %}
+{% block head %}
+{{ super() }}
+{% endblock %}
+{% block content %}
 
-    <h1>{{ member.name }}</h1>
+        {% with messages = get_flashed_messages() %}
 
-    <h4>Categories</h4>
+        {% if messages %}
 
-    {% for category in categories %}
+        <ul>
+            {% for message in messages %}
+            <li class="flash-message">{{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        {% endwith%}
 
-    <ul>
-        <li>{{ category.name }}</li>
-    </ul>
-    
-    {% endfor %}
-</body>
-</html>
+        <h1 class="name-header">{{ member.name }}</h1>
+
+        <div class="home-container">
+
+            <div class="categories-list">
+                <h2>Categories</h2>
+                <h4><a href="{{ url_for('add_category') }}">Add Category</a></h4></br>
+
+                    <ul>
+                        {% for category in categories %}
+                            <li><a href="{{ url_for('item_list', category_id = category.id) }}">{{ category.name }}</a></li>
+                        {% endfor %}
+                    </ul>
+
+                
+            </div>
+
+            <div class="items-list">
+                <h2>Items</h2>
+                <h4><a href="{{ url_for('add_item') }}">Add Item</a></h4></br>
+                    <ul>
+                        {% for item in items %}
+                            <li><a href="{{ url_for('item', category_id = item.category.id, item_id = item.id) }}">{{ item.name }}</a></li>
+                        {% endfor %}
+                    </ul>
+            </div>
+        </div>
+        {% endblock %}
