@@ -23,6 +23,15 @@ class Category(Base):
     user_id = Column(Integer, ForeignKey('user.id'))
     user = relationship(User)
 
+    @property
+    def serialize(self):
+        """Return object data in easily serializeable format"""
+        return {
+            'id': self.id,
+            'name': self.name,
+            
+        }
+
 class Item(Base): 
     __tablename__ = 'item'
 
@@ -33,6 +42,17 @@ class Item(Base):
     category = relationship('Category', backref=backref('items', cascade="all, delete"))
     user_id = Column(Integer, ForeignKey('user.id'))
     user = relationship(User)
+
+    @property
+    def serialize(self):
+        """Return object data in easily serializeable format"""
+        return {
+            'id': self.id,
+            'category': self.category_id,
+            'name': self.name,
+            'description': self.description,
+            
+        }
 
 
 engine = create_engine('sqlite:///itemcatalogue.db')

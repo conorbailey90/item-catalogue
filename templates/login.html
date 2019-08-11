@@ -6,9 +6,13 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <meta name="google-signin-client_id" content="333642631602-sv2aq35jd19420boccv46o9mmus766fu.apps.googleusercontent.com">
     <script src="https://apis.google.com/js/platform.js" async defer></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='landing.css') }}">
+    <link href="https://fonts.googleapis.com/css?family=Montserrat&display=swap" rel="stylesheet">
     <title>Login</title>
 </head>
 <body>
+
+    <div class="container">
     <h1>Item Catalogue</h1>
 
     {% with messages = get_flashed_messages() %}
@@ -47,6 +51,11 @@
         </script>
 
 <div class="result"></div>
+
+<h4><a href="{{ url_for('home') }}">Return</a></h4>
+
+</div>
+
 <script src="https://apis.google.com/js/platform.js" async defer></script>
 </body>
 

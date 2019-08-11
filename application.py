@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, url_for, request, redirect, flash, Markup
+from flask import Flask, render_template, url_for, request, redirect, flash, Markup, jsonify
 from flask import session as login_session
 from flask import make_response
 
@@ -28,6 +28,28 @@ Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
+
+# JSON API End Points
+
+@app.route('/catalogue/categories/JSON')
+def categoriesJSON():
+    categories = session.query(Category).all()
+    return jsonify(categories=[i.serialize for i in categories])
+
+@app.route('/catalogue/categories/<int:category_id>/JSON')
+def itemsJSON(category_id):
+    items = session.query(Item).filter_by(
+        category_id=category_id).all()
+    return jsonify(Items=[i.serialize for i in items])
+
+@app.route('/catalogue/items/<int:item_id>/JSON')
+def itemJSON(item_id):
+    item = session.query(Item).filter_by(
+        id=item_id).one()
+    return jsonify(Item=item.serialize)
+
+
+# Flask Application Routing
 
 @app.route('/login')
 def login():
@@ -77,8 +99,6 @@ def gconnect():
     return ''
 
    
-
-
 @app.route('/gdisconnect', methods = ['POST'])
 def gdisconnect():
     if request.args.get('state') == login_session['state']:
@@ -102,7 +122,6 @@ def get_state():
     return state
 
 
-
 @app.route('/')
 @app.route('/catalogue/')
 def home():
@@ -122,7 +141,8 @@ def home():
             session.commit()
     current_user = session.query(User).filter_by(email = login_session.get('email')).one_or_none()
    
-    return render_template('cataloguehome.html', categories=categories, items=items, STATE=state, user=user, current_user=current_user)
+    return render_template('cataloguehome.html', categories=categories, items=items, 
+                                STATE=state, user=user, current_user=current_user)
 
 
 @app.route('/catalogue/members')
@@ -147,7 +167,8 @@ def user_profile(user_id):
     member = session.query(User).filter_by(id=user_id).one()
     user_categories = session.query(Category).filter_by(user_id = user_id).all()
     user_items = session.query(Item).filter_by(user_id = user_id).all()
-    return render_template('profile.html', member = member, categories = user_categories, items = user_items, STATE=state)
+    return render_template('profile.html', member = member, categories = user_categories, 
+                                    items = user_items, STATE=state)
 
     
 
@@ -171,7 +192,8 @@ def item_list(category_id):
     items = session.query(Item).filter_by(category_id=category_id).all()
     if items == []:
         flash(Markup('There are no items listed under this category. Add an item <a href="/catalogue/items/add/">here</a>'))
-    return render_template('categorylist.html',user = user, category = category, items=items, owner = owner, STATE=state)
+    return render_template('categorylist.html',user = user, category = category, 
+                                    items=items, owner = owner, STATE=state)
 
 
 # View individual item details
@@ -188,7 +210,8 @@ def item(category_id, item_id):
 
     owner_id = item.user_id
     owner = session.query(User).filter_by(id=owner_id).one()
-    return render_template('listitem.html', user = user, category_id = category_id, item_id=item_id, category = category, item = item, owner=owner, STATE=state)
+    return render_template('listitem.html', user = user, category_id = category_id, 
+                item_id=item_id, category = category, item = item, owner=owner, STATE=state)
 
 # Add new category
 @app.route('/catalogue/categories/add/', methods = ['GET', 'POST'])
@@ -257,7 +280,8 @@ def edit_category(category_id):
         flash('Category name updated') 
         return redirect(url_for('item_list', category_id = category_id))
     else:
-        return render_template('editcategory.html',user = user, category_id = category_id, category = category, STATE=state)
+        return render_template('editcategory.html',user = user, 
+                    category_id = category_id, category = category, STATE=state)
 
 # Delete category
 @app.route('/catalogue/categories/<int:category_id>/delete/', methods = ['GET', 'POST'])
@@ -289,7 +313,8 @@ def delete_category(category_id):
         flash('Deleted category: %s' % category.name) 
         return redirect(url_for('home'))
     else:
-        return render_template('deletecategory.html',user = user, category_id = category_id, category = category, STATE=state)
+        return render_template('deletecategory.html',user = user, 
+                    category_id = category_id, category = category, STATE=state)
 
 # Add Item
 @app.route('/catalogue/items/add/', methods = ['GET', 'POST'])
@@ -384,7 +409,8 @@ def edit_item(category_id, item_id):
         flash('%s updated' %editItem.name) 
         return redirect(url_for('item', category_id=category_id, item_id=item_id, owner=owner))
     else:
-        return render_template('edititem.html',user = user, category_id = category_id, item_id = item_id, categories=categories, item=editItem, STATE=state)
+        return render_template('edititem.html',user = user, category_id = category_id, 
+                    item_id = item_id, categories=categories, item=editItem, STATE=state)
 
 # Delete item
 @app.route('/catalogue/<int:category_id>/<int:item_id>/delete/', methods = ['GET', 'POST'])
@@ -416,7 +442,8 @@ def delete_item(category_id, item_id):
         flash('%s deleted' %deleteItem.name) 
         return redirect(url_for('item_list', category_id = category_id))
     else:
-        return render_template('deleteitem.html',user = user, category_id = category_id, item = deleteItem, STATE=state)
+        return render_template('deleteitem.html',user = user, category_id = category_id, 
+                                            item = deleteItem, STATE=state)
 
 
 if __name__ == '__main__':
