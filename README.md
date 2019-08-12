@@ -56,15 +56,15 @@ python3 application.py
 
 ## JSON API endpoints
 
-Returns JSON of all categories:
+1. Returns JSON of all categories:
 
 `/catalogue/categories/JSON`
 
-Returns JSON of all items belonging to a specific category:
+2. Returns JSON of all items belonging to a specific category:
 
 `/catalogue/categories/<int:category_id>/JSON`
 
-Returns JSON for one specific item:
+3. Returns JSON for one specific item:
 
 `/catalogue/items/<int:item_id>/JSON`
 
