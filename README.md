@@ -53,3 +53,7 @@ python3 application.py
 ```
 
 8. Visit `http://localhost:8000/` in your preferred web browser.
+
+Thank you for using the Item Catalogue. If you have any issues with this application please contact me via GitHub.
+
+Conor Bailey
