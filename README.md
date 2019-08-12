@@ -30,10 +30,10 @@ git clone https://github.com/<YOUR-USERNAME-HERE>/item-catalogue.git
 
 3. When `vagrant up` has finished running, you will get your shell prompt back. Next run `vagrant ssh` to log in to your newly installed linux virtual machine. 
 
-4. Install / upgrade Flask:
+4. Install requirements.txt
 
 ```
-sudo python3 -m pip install --upgrade flask
+sudo pip3 install -r requirements.txt
 ```
 
 5. Set up the database:
@@ -53,6 +53,21 @@ python3 application.py
 ```
 
 8. Visit `http://localhost:8000/` in your preferred web browser.
+
+## JSON API endpoints
+
+Returns JSON of all categories:
+
+`/catalogue/categories/JSON`
+
+Returns JSON of all items belonging to a specific category:
+
+`/catalogue/categories/<int:category_id>/JSON`
+
+Returns JSON for one specific item:
+
+`/catalogue/items/<int:item_id>/JSON`
+
 
 Thank you for using the Item Catalogue. If you have any issues with this application please contact me via GitHub.
 
