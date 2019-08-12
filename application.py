@@ -407,7 +407,7 @@ def edit_item(category_id, item_id):
         session.add(editItem)
         session.commit()
         flash('%s updated' %editItem.name) 
-        return redirect(url_for('item', category_id=category_id, item_id=item_id, owner=owner))
+        return redirect(url_for('item', category_id=editItem.category.id, item_id=item_id, owner=owner))
     else:
         return render_template('edititem.html',user = user, category_id = category_id, 
                     item_id = item_id, categories=categories, item=editItem, STATE=state)
