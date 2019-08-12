@@ -31,7 +31,14 @@ h4{
 
 .result{
     position: relative;
-    top: 8rem;
+    top: 6rem;
+    left: 50%;
+    transform: translate(-50%);
+}
+
+.flash-message{
+    position: relative;
+    top: 10rem;
     left: 50%;
     transform: translate(-50%);
 }
