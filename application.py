@@ -159,7 +159,7 @@ def user_profile(user_id):
     session = DBSession()
 
     if 'username' not in login_session:
-        flash('Please sign in.')
+        flash('Please sign in.', 'error')
         return redirect(url_for('login'))
     
     state = get_state()
@@ -191,7 +191,7 @@ def item_list(category_id):
         return redirect(url_for('home'))
     items = session.query(Item).filter_by(category_id=category_id).all()
     if items == []:
-        flash(Markup('There are no items listed under this category. Add an item <a href="/catalogue/items/add/">here</a>'))
+        flash(Markup('There are no items listed under this category. Add an item <a href="/catalogue/items/add/">here</a>'),'error')
     return render_template('categorylist.html',user = user, category = category, 
                                     items=items, owner = owner, STATE=state)
 
@@ -223,13 +223,13 @@ def add_category():
     user = login_session.get('username')
 
     if 'username' not in login_session:
-        flash('Please sign in to add a new category.')
+        flash('Please sign in to add a new category.', 'error')
         return redirect(url_for('login'))
 
     if request.method == 'POST':
         # Check the text input is not blank.
         if request.form['name'] == '':
-            flash('Please add a category name.')
+            flash('Please add a category name.', 'error')
             return render_template('addcategory.html')
         
         # Check to see if the logged in users details are stored in the database
@@ -245,7 +245,7 @@ def add_category():
         new_category = Category(name = request.form['name'], user_id=currentUser.id)
         session.add(new_category)
         session.commit()
-        flash('New category created: %s' % new_category.name) 
+        flash('New category created: %s' % new_category.name, 'success') 
         return redirect(url_for('home'))
     else:
         return render_template('addcategory.html',user = user, STATE=state)
@@ -265,11 +265,11 @@ def edit_category(category_id):
     owner = session.query(User).filter_by(id=owner_id).one()
 
     if 'username' not in login_session:
-        flash('Please sign in to edit an item.')
+        flash('Please sign in to edit an item.', 'error')
         return redirect(url_for('login'))
 
     if owner.email != login_session['email']:
-        flash('You are not authorised to edit this category.')
+        flash('You are not authorised to edit this category.', 'error')
         return redirect(url_for('item_list', category_id = category.id))
 
 
@@ -277,7 +277,7 @@ def edit_category(category_id):
         category.name = request.form['name']
         session.add(category)
         session.commit()
-        flash('Category name updated') 
+        flash('Category name updated', 'success') 
         return redirect(url_for('item_list', category_id = category_id))
     else:
         return render_template('editcategory.html',user = user, 
@@ -298,11 +298,11 @@ def delete_category(category_id):
     owner = session.query(User).filter_by(id=owner_id).one()
 
     if 'username' not in login_session:
-        flash('Please sign in to delete an item.')
+        flash('Please sign in to delete an item.', 'error')
         return redirect(url_for('login'))
 
     if owner.email != login_session['email']:
-        flash('You are not authorised to delete this category.')
+        flash('You are not authorised to delete this category.', 'error')
         return redirect(url_for('item_list', category_id = category.id))
 
     if category == None:
@@ -310,7 +310,7 @@ def delete_category(category_id):
     elif request.method == 'POST':
         session.delete(category)
         session.commit()
-        flash('Deleted category: %s' % category.name) 
+        flash('Deleted category: %s' % category.name, 'success') 
         return redirect(url_for('home'))
     else:
         return render_template('deletecategory.html',user = user, 
@@ -328,17 +328,17 @@ def add_item():
     categories = session.query(Category).all()
 
     if categories == []: # No categories stored in Database. Redirect to add a category.
-        flash('Please create a category for your new item first.')
+        flash('Please create a category for your new item first.', 'error')
         return redirect(url_for('add_category'))
 
     if 'username' not in login_session:
-        flash('Please sign in to add a new item.')
+        flash('Please sign in to add a new item.', 'error')
         return redirect(url_for('login'))
     
     if request.method == 'POST':
         # Check the text input is not blank.
         if request.form['name'] == '':
-            flash('Please add an item name.')
+            flash('Please add an item name.', 'error')
             return render_template('additem.html', categories = categories)
         
         # Check to see if the logged in users details are stored in the database
@@ -358,7 +358,7 @@ def add_item():
             user_id = currentUser.id)
         session.add(new_item)
         session.commit()
-        flash('%s added to to the %s category.' %(new_item.name, new_item.category.name) )
+        flash('%s added to to the %s category.' %(new_item.name, new_item.category.name), 'success' )
         return redirect(url_for('home'))
     else:
         return render_template('additem.html', user = user, categories=categories, STATE=state)
@@ -380,17 +380,17 @@ def edit_item(category_id, item_id):
     owner = session.query(User).filter_by(id=owner_id).one()
 
     if 'username' not in login_session:
-        flash('Please sign in to edit an item.')
+        flash('Please sign in to edit an item.', 'error')
         return redirect(url_for('login'))
 
     if owner.email != login_session['email']:
-        flash('You are not authorised to edit this item.')
+        flash('You are not authorised to edit this item.', 'error')
         return redirect(url_for('item', category_id=category_id, item_id=item_id))
     
     if request.method == 'POST':
         # Check the text input is not blank.
         if request.form['name'] == '':
-            flash('Please add an item name.')
+            flash('Please add an item name.', 'error')
             return render_template('additem.html', categories = categories)
         
         # Check to see if the logged in users details are stored in the database
@@ -406,7 +406,7 @@ def edit_item(category_id, item_id):
         editItem.description = request.form['description']
         session.add(editItem)
         session.commit()
-        flash('%s updated' %editItem.name) 
+        flash('%s updated' %editItem.name, 'success') 
         return redirect(url_for('item', category_id=editItem.category.id, item_id=item_id, owner=owner))
     else:
         return render_template('edititem.html',user = user, category_id = category_id, 
@@ -427,11 +427,11 @@ def delete_item(category_id, item_id):
     owner = session.query(User).filter_by(id=owner_id).one()
 
     if 'username' not in login_session:
-        flash('Please sign in to delete an item.')
+        flash('Please sign in to delete an item.', 'error')
         return redirect(url_for('login'))
 
     if owner.email != login_session['email']:
-        flash('You are not authorised to delete this item.')
+        flash('You are not authorised to delete this item.', 'error')
         return redirect(url_for('item', category_id=category_id, item_id=item_id))
 
     if deleteItem == None:
@@ -439,7 +439,7 @@ def delete_item(category_id, item_id):
     elif request.method == 'POST':
         session.delete(deleteItem)
         session.commit()
-        flash('%s deleted' %deleteItem.name) 
+        flash('%s deleted' %deleteItem.name, 'success') 
         return redirect(url_for('item_list', category_id = category_id))
     else:
         return render_template('deleteitem.html',user = user, category_id = category_id, 

@@ -24,6 +24,11 @@ a:hover{
     font-size: .8rem;
 }
 
+.success{
+    color: rgb(4, 227, 37);
+    font-size: .8rem;
+}
+
 .edit{
     font-size: 1.2rem;
 

@@ -17,6 +17,16 @@ a:hover{
     transition: 0.5s;
 }
 
+.flash-message{
+    color: red;
+    font-size: .8rem;
+}
+
+.success{
+    color: rgb(4, 227, 37);
+    font-size: .8rem;
+}
+
 h1{
     text-align: center;
 }

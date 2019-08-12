@@ -5,7 +5,19 @@
 {% endblock %}
 {% block content %}
 
-        {% with messages = get_flashed_messages() %}
+{% with success = get_flashed_messages(category_filter=["success"]) %}
+{% if success %}
+<ul>
+    {% for message in success %}
+    <li class="success">{{ message }} </li>
+    {% endfor %}
+</ul>
+{% endif %}
+{% endwith %}   
+
+
+
+        {% with messages = get_flashed_messages(category_filter=["error"]) %}
 
         {% if messages %}
 
